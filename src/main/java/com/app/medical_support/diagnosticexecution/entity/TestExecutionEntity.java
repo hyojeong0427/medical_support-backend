@@ -17,7 +17,7 @@ public class TestExecutionEntity {
 
     @Id
     @Column(name = "TEST_EXECUTION_ID")
-    private Long testExecutionId;
+    private String testExecutionId;
 
     @Column(name = "ORDER_ITEM_ID")
     private Long orderItemId;

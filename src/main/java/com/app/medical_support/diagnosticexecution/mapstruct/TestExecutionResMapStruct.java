@@ -14,4 +14,5 @@ import java.util.List;
 public interface TestExecutionResMapStruct extends ResMapStruct<TestExecutionDTO, TestExecutionEntity> {
     TestExecutionDTO toDTO(TestExecutionEntity entity);
     List<TestExecutionDTO> toDTOList(List<TestExecutionEntity> entities) ;
+
 }

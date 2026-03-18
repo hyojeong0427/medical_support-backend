@@ -1,8 +1,8 @@
 package com.app.medical_support.diagnosticexecution.service;
 
-
 import com.app.medical_support.diagnosticexecution.dto.SpecimenDTO;
 import com.app.medical_support.diagnosticexecution.dto.TestExecutionDTO;
+import com.app.medical_support.diagnosticexecution.dto.TestExecutionReqDTO;
 
 import java.util.List;
 
@@ -16,8 +16,7 @@ public interface DiagnosticExecutionService {
     void deleteSpecimen(String id);
 
     List<TestExecutionDTO> findTestExecutionList();
-    TestExecutionDTO findTestExecutionDetail(Long id);
-
+    TestExecutionDTO findTestExecutionDetail(String id);
+    TestExecutionDTO registerTestExecution(TestExecutionDTO testExecutionDTO);
+    TestExecutionDTO modifyTestExecution(String id, TestExecutionReqDTO testExecutionReqDTO);
 }
-
-

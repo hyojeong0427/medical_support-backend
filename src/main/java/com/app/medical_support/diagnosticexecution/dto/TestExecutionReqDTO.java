@@ -7,20 +7,11 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "진료 검사 수행 정보")
+@Schema(description = "진료 검사 수행 수정 정보")
 @Getter
 @Setter
 @NoArgsConstructor
-public class TestExecutionDTO {
-
-    @Schema(description = "검사수행ID")
-    private String testExecutionId;
-
-    @Schema(description = "오더항목ID")
-    private Long orderItemId;
-
-    @Schema(description = "검사수행유형")
-    private String executionType;
+public class TestExecutionReqDTO {
 
     @Schema(description = "진행상태")
     private String progressStatus;
@@ -36,7 +27,4 @@ public class TestExecutionDTO {
 
     @Schema(description = "수행자ID")
     private Long performerId;
-
-    @Schema(description = "수정일시")
-    private LocalDateTime updatedAt;
 }

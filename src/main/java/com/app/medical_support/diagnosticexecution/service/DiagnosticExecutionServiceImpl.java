@@ -2,6 +2,7 @@ package com.app.medical_support.diagnosticexecution.service;
 
 import com.app.medical_support.diagnosticexecution.dto.SpecimenDTO;
 import com.app.medical_support.diagnosticexecution.dto.TestExecutionDTO;
+import com.app.medical_support.diagnosticexecution.dto.TestExecutionReqDTO;
 import com.app.medical_support.diagnosticexecution.entity.SpecimenEntity;
 import com.app.medical_support.diagnosticexecution.entity.TestExecutionEntity;
 import com.app.medical_support.diagnosticexecution.exception.SpecimenNotFoundException;
@@ -9,6 +10,7 @@ import com.app.medical_support.diagnosticexecution.exception.TestExecutionNotFou
 import com.app.medical_support.diagnosticexecution.mapper.SpecimenMapper;
 import com.app.medical_support.diagnosticexecution.mapstruct.SpecimenReqMapStruct;
 import com.app.medical_support.diagnosticexecution.mapstruct.SpecimenResMapStruct;
+import com.app.medical_support.diagnosticexecution.mapstruct.TestExecutionReqMapStruct;
 import com.app.medical_support.diagnosticexecution.mapstruct.TestExecutionResMapStruct;
 import com.app.medical_support.diagnosticexecution.repository.SpecimenRepository;
 import com.app.medical_support.diagnosticexecution.repository.TestExecutionRepository;
@@ -17,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -29,6 +32,7 @@ public class DiagnosticExecutionServiceImpl implements DiagnosticExecutionServic
     private final SpecimenResMapStruct specimenResMapStruct;
     private final SpecimenMapper specimenMapper;
     private final TestExecutionRepository testExecutionRepository;
+    private final TestExecutionReqMapStruct testExecutionReqMapStruct;
     private final TestExecutionResMapStruct testExecutionResMapStruct;
 
     @Override
@@ -118,12 +122,78 @@ public class DiagnosticExecutionServiceImpl implements DiagnosticExecutionServic
         specimenRepository.save(specimenEntity);
     }
 
+    @Override
+    public List<TestExecutionDTO> findTestExecutionList() {
+        log.info("Find test execution list");
+
+        List<TestExecutionEntity> testExecutionEntityList = testExecutionRepository.findAll();
+        return testExecutionResMapStruct.toDTOList(testExecutionEntityList);
+    }
+
+    @Override
+    public TestExecutionDTO findTestExecutionDetail(String id) {
+        log.info("Find test execution detail. id={}", id);
+
+        TestExecutionEntity testExecutionEntity = testExecutionRepository.findById(id)
+                .orElseThrow(() -> new TestExecutionNotFoundExecution("Test execution not found. id=" + id));
+
+        return testExecutionResMapStruct.toDTO(testExecutionEntity);
+    }
+
+    @Override
+    @Transactional
+    public TestExecutionDTO registerTestExecution(TestExecutionDTO testExecutionDTO) {
+        log.info("Register test execution");
+
+        TestExecutionEntity testExecutionEntity = testExecutionReqMapStruct.toEntity(testExecutionDTO);
+
+        if (!hasText(testExecutionEntity.getTestExecutionId())) {
+            testExecutionEntity.setTestExecutionId(createTestExecutionId());
+        }
+
+        testExecutionEntity.setCreatedAt(LocalDateTime.now());
+
+        if (!hasText(testExecutionEntity.getProgressStatus())) {
+            testExecutionEntity.setProgressStatus("WAITING");
+        }
+
+        if (testExecutionEntity.getRetryNo() == null) {
+            testExecutionEntity.setRetryNo(0);
+        }
+
+        TestExecutionEntity savedEntity = testExecutionRepository.save(testExecutionEntity);
+        return testExecutionResMapStruct.toDTO(savedEntity);
+    }
+
+    @Override
+    @Transactional
+    public TestExecutionDTO modifyTestExecution(String id, TestExecutionReqDTO testExecutionReqDTO) {
+        log.info("Modify test execution. id={}", id);
+
+        TestExecutionEntity savedEntity = testExecutionRepository.findById(id)
+                .orElseThrow(() -> new TestExecutionNotFoundExecution("Test execution not found. id=" + id));
+
+        savedEntity.setProgressStatus(testExecutionReqDTO.getProgressStatus());
+        savedEntity.setRetryNo(testExecutionReqDTO.getRetryNo());
+        savedEntity.setStartedAt(testExecutionReqDTO.getStartedAt());
+        savedEntity.setCompletedAt(testExecutionReqDTO.getCompletedAt());
+        savedEntity.setPerformerId(testExecutionReqDTO.getPerformerId());
+        savedEntity.setUpdatedAt(LocalDateTime.now());
+
+        TestExecutionEntity updatedEntity = testExecutionRepository.save(savedEntity);
+        return testExecutionResMapStruct.toDTO(updatedEntity);
+    }
+
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
     private String createSpecimenId() {
         return "SPECIMEN_" + System.currentTimeMillis();
+    }
+
+    private String createTestExecutionId() {
+        return "TEST_EXECUTION_" + System.currentTimeMillis();
     }
 
     private String normalizeStatus(String status) {
@@ -143,27 +213,4 @@ public class DiagnosticExecutionServiceImpl implements DiagnosticExecutionServic
 
         return trimmedStatus;
     }
-
-
-    @Override
-    public List<TestExecutionDTO> findTestExecutionList() {
-        log.info("Find test execution list");
-
-        List<TestExecutionEntity> testExecutionEntityList = testExecutionRepository.findAll();
-        return testExecutionResMapStruct.toDTOList(testExecutionEntityList);
-    }
-
-
-    @Override
-    public TestExecutionDTO findTestExecutionDetail(Long id) {
-
-        TestExecutionEntity testExecutionEntity = testExecutionRepository.findById(id)
-                .orElseThrow(() -> new TestExecutionNotFoundExecution("검사 수행 아이디가 존재하지 않습니다"));
-
-        return testExecutionResMapStruct.toDTO(testExecutionEntity);
-    }
-
-
-
-
 }
