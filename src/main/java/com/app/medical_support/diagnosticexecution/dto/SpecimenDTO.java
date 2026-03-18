@@ -7,30 +7,27 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "검체 내용")
+@Schema(description = "Specimen data")
 @Getter
 @Setter
 @NoArgsConstructor
 public class SpecimenDTO {
 
-    @Schema(description = "검체 아이디")
+    @Schema(description = "Specimen ID")
     private String specimenId;
 
-    @Schema(description = "검체 상태")
-    private String specimenStatus;
+    @Schema(description = "Visit ID")
+    private String visitId;
 
-    @Schema(description = "검체 종류")
+    @Schema(description = "Specimen type")
     private String specimenType;
 
-    @Schema(description = "검사 수행 아이디")
-    private String testExecutionId ;
-
-    @Schema(description = "채취 일시")
+    @Schema(description = "Collected date time")
     private LocalDateTime collectedAt;
 
-    @Schema(description = "채취 담당")
-    private String collectedById;
+    @Schema(description = "Created by")
+    private String createdBy;
 
-    @Schema(description = "상태")
+    @Schema(description = "Status")
     private String status;
 }

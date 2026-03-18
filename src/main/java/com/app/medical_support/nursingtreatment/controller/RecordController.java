@@ -2,6 +2,8 @@ package com.app.medical_support.nursingtreatment.controller;
 
 import com.app.medical_support.common.ApiResponse;
 import com.app.medical_support.nursingtreatment.dto.RecordDTO;
+import com.app.medical_support.nursingtreatment.dto.RecordRequestDTO;
+import com.app.medical_support.nursingtreatment.dto.RecordResponseDTO;
 import com.app.medical_support.nursingtreatment.dto.RecordStatusRequest;
 import com.app.medical_support.nursingtreatment.service.NursingTreatmentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,26 +27,25 @@ public class RecordController {
 
     @Operation(summary = "record search", description = "기록 검색")
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<RecordDTO>>> search(
-            @Parameter(description = "검색 조건 타입: visitId(진료 아이디), recordedAt(기록 시각)")
+    public ResponseEntity<ApiResponse<List<RecordResponseDTO>>> search(
             @RequestParam("searchType") String searchType,
-
-            @Parameter(description = "사용자 검색 값")
-            @RequestParam("searchValue") String searchValue
+            @RequestParam(value = "searchValue", required = false) String searchValue,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate
     ) {
-        List<RecordDTO> result = recordService.search(searchType, searchValue);
+        List<RecordResponseDTO> result = recordService.search(searchType, searchValue, startDate, endDate);
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "기록 검색 성공", result));
+                new ApiResponse<>(true, "기록 검색 성공", result)
+        );
     }
-
     // 검색 조건이 늘어나면 하나 더 메서드를 만드는 게 맞다. .  .  .
 
 
     @Operation(summary = "record list", description = "기록 전체 목록 조회")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RecordDTO>>> findList() {
+    public ResponseEntity<ApiResponse<List<RecordResponseDTO>>> findList() {
 
-        List<RecordDTO> list = recordService.findRecordList();
+        List<RecordResponseDTO> list = recordService.findRecordList();
 
         return ResponseEntity.ok(new ApiResponse<>(true, "간호 기록 전체 목록 조회 성공", list));
     }
@@ -52,11 +53,11 @@ public class RecordController {
 
     @Operation(summary = "record", description = "기록 단건 조회")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RecordDTO>> findRecordDetail(
+    public ResponseEntity<ApiResponse<RecordResponseDTO>> findRecordDetail(
             @Parameter(description = "간호 기록 아이디")
             @PathVariable String id) {
 
-        RecordDTO recordDTO = recordService.findRecordDetail(id);
+        RecordResponseDTO recordDTO = recordService.findRecordDetail(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "간호 단건 조회 성공", recordDTO));
     }
 
@@ -66,8 +67,9 @@ public class RecordController {
     @PostMapping
     public ResponseEntity<ApiResponse<RecordDTO>> registerRecord(
             @Parameter(description = "신규 간호 기록 등록을 위한 요청 데이터")
-            @RequestBody RecordDTO record)
-    {RecordDTO recordDTO = recordService.registerRecord(record);
+            @RequestBody RecordRequestDTO record)
+    {
+        RecordDTO recordDTO = recordService.registerRecord(record);
         return ResponseEntity.ok
                 (new ApiResponse<>(true, "기록 신규 생성 성공", recordDTO));
     }

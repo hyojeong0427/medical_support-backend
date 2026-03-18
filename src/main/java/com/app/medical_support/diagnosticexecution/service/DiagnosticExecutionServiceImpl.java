@@ -1,12 +1,17 @@
 package com.app.medical_support.diagnosticexecution.service;
 
 import com.app.medical_support.diagnosticexecution.dto.SpecimenDTO;
+import com.app.medical_support.diagnosticexecution.dto.TestExecutionDTO;
 import com.app.medical_support.diagnosticexecution.entity.SpecimenEntity;
+import com.app.medical_support.diagnosticexecution.entity.TestExecutionEntity;
 import com.app.medical_support.diagnosticexecution.exception.SpecimenNotFoundException;
+import com.app.medical_support.diagnosticexecution.exception.TestExecutionNotFoundExecution;
 import com.app.medical_support.diagnosticexecution.mapper.SpecimenMapper;
 import com.app.medical_support.diagnosticexecution.mapstruct.SpecimenReqMapStruct;
 import com.app.medical_support.diagnosticexecution.mapstruct.SpecimenResMapStruct;
+import com.app.medical_support.diagnosticexecution.mapstruct.TestExecutionResMapStruct;
 import com.app.medical_support.diagnosticexecution.repository.SpecimenRepository;
+import com.app.medical_support.diagnosticexecution.repository.TestExecutionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,87 +28,142 @@ public class DiagnosticExecutionServiceImpl implements DiagnosticExecutionServic
     private final SpecimenReqMapStruct specimenReqMapStruct;
     private final SpecimenResMapStruct specimenResMapStruct;
     private final SpecimenMapper specimenMapper;
-
-
+    private final TestExecutionRepository testExecutionRepository;
+    private final TestExecutionResMapStruct testExecutionResMapStruct;
 
     @Override
-    public List<SpecimenDTO> searchSpecimen (String searchType, String searchValue){
-        log.info("검색 service 호출 searchType={}, searchValue={}", searchType, searchValue );
-        if (searchType == null || searchType.isEmpty()){
-            throw new SpecimenNotFoundException("검색 타입이 필요합니다");
-        }
-        List<SpecimenEntity> entities =
-                specimenMapper.searchSpecimen(searchType, searchValue);
-        return specimenResMapStruct.toDTOList(entities);
-    }
+    public List<SpecimenDTO> searchSpecimen(String searchType, String searchValue) {
+        log.info("Search specimen. searchType={}, searchValue={}", searchType, searchValue);
 
+        if (!hasText(searchType) || !hasText(searchValue)) {
+            throw new SpecimenNotFoundException("Search type and search value are required.");
+        }
+
+        List<SpecimenEntity> specimenEntityList = specimenMapper.searchSpecimen(searchType, searchValue);
+        return specimenResMapStruct.toDTOList(specimenEntityList);
+    }
 
     @Override
     public List<SpecimenDTO> findSpecimenList() {
-        log.info("검체 전체 조회");
-        List<SpecimenEntity> entities = specimenRepository.findAll();
-        return specimenResMapStruct.toDTOList(entities);
+        log.info("Find specimen list");
+
+        List<SpecimenEntity> specimenEntityList = specimenRepository.findAll();
+        return specimenResMapStruct.toDTOList(specimenEntityList);
     }
 
     @Override
     public SpecimenDTO findSpecimenDetail(String id) {
-        log.info("Specimen detail id={} 로 검체 단건 조회 메서드가 실행됩니다.", id);
+        log.info("Find specimen detail. id={}", id);
 
-        SpecimenEntity entity = specimenRepository.findById(id).
-                orElseThrow(()-> new IllegalArgumentException("해당 검체가 존재하지 않습니다"));
+        SpecimenEntity specimenEntity = specimenRepository.findById(id)
+                .orElseThrow(() -> new SpecimenNotFoundException("Specimen not found. id=" + id));
 
-        return specimenResMapStruct.toDTO(entity);
+        return specimenResMapStruct.toDTO(specimenEntity);
     }
 
     @Override
     @Transactional
     public SpecimenDTO registerSpecimen(SpecimenDTO specimenDTO) {
-        log.info("검체 신규 생성 메서드가 실행됩니다");
-        SpecimenEntity entity = specimenReqMapStruct.toEntity(specimenDTO);
+        log.info("Register specimen");
 
-        if (entity.getSpecimenId() == null || entity.getSpecimenId().trim().isEmpty()) {
-            entity.setSpecimenId("SP_" + System.currentTimeMillis() );
+        SpecimenEntity specimenEntity = specimenReqMapStruct.toEntity(specimenDTO);
 
+        if (!hasText(specimenEntity.getSpecimenId())) {
+            specimenEntity.setSpecimenId(createSpecimenId());
         }
-        SpecimenEntity newSpecimen = specimenRepository.save(entity);
-        newSpecimen.setStatus("ACTIVE");
-        return specimenResMapStruct.toDTO(newSpecimen);
-    }
 
+        if (!hasText(specimenEntity.getCreatedBy())) {
+            specimenEntity.setCreatedBy("SYSTEM");
+        }
+
+        specimenEntity.setStatus(normalizeStatus(specimenEntity.getStatus()));
+
+        SpecimenEntity savedEntity = specimenRepository.save(specimenEntity);
+        return specimenResMapStruct.toDTO(savedEntity);
+    }
 
     @Override
     @Transactional
     public SpecimenDTO modifySpecimen(String id, SpecimenDTO specimenDTO) {
-        log.info("Modify specimen id={} 검체 수정 메서드가 실행됩니다", id);
+        log.info("Modify specimen. id={}", id);
 
-        SpecimenEntity saved = specimenRepository.findById(id)
-                .orElseThrow(() -> new SpecimenNotFoundException("수정할 검체가 존재하지 않습니다"));
+        SpecimenEntity savedEntity = specimenRepository.findById(id)
+                .orElseThrow(() -> new SpecimenNotFoundException("Specimen not found. id=" + id));
 
-        saved.setTestExecutionId(specimenDTO.getTestExecutionId());
-        saved.setSpecimenStatus(specimenDTO.getSpecimenStatus());
-        saved.setSpecimenType(specimenDTO.getSpecimenType());
-        saved.setCollectedById(specimenDTO.getCollectedById());
-        saved.setStatus(specimenDTO.getStatus());
+        savedEntity.setVisitId(specimenDTO.getVisitId());
+        savedEntity.setSpecimenType(specimenDTO.getSpecimenType());
+        savedEntity.setCollectedAt(specimenDTO.getCollectedAt());
 
-        SpecimenEntity updated = specimenRepository.save(saved);
-        return specimenResMapStruct.toDTO(updated);
+        if (hasText(specimenDTO.getCreatedBy())) {
+            savedEntity.setCreatedBy(specimenDTO.getCreatedBy().trim());
+        }
+
+        if (hasText(specimenDTO.getStatus())) {
+            savedEntity.setStatus(normalizeStatus(specimenDTO.getStatus()));
+        }
+
+        SpecimenEntity updatedEntity = specimenRepository.save(savedEntity);
+        return specimenResMapStruct.toDTO(updatedEntity);
     }
 
     @Override
     @Transactional
     public void deleteSpecimen(String id) {
-        log.info("Delete specimen id={} 검체 삭제 메서드가 실행됩니다", id);
+        log.info("Delete specimen. id={}", id);
 
-        SpecimenEntity entity = specimenRepository.findById(id)
-                .orElseThrow(() -> new SpecimenNotFoundException("비활성화 할 검체가 존재하지 않습니다"));
+        SpecimenEntity specimenEntity = specimenRepository.findById(id)
+                .orElseThrow(() -> new SpecimenNotFoundException("Specimen not found. id=" + id));
 
-        entity.setStatus("INACTIVE");
-
-        specimenRepository.save(entity);
-
-    }
+        specimenEntity.setStatus("N");
+        specimenRepository.save(specimenEntity);
     }
 
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private String createSpecimenId() {
+        return "SPECIMEN_" + System.currentTimeMillis();
+    }
+
+    private String normalizeStatus(String status) {
+        if (!hasText(status)) {
+            return "Y";
+        }
+
+        String trimmedStatus = status.trim().toUpperCase();
+
+        if ("ACTIVE".equals(trimmedStatus) || "Y".equals(trimmedStatus)) {
+            return "Y";
+        }
+
+        if ("INACTIVE".equals(trimmedStatus) || "N".equals(trimmedStatus)) {
+            return "N";
+        }
+
+        return trimmedStatus;
+    }
+
+
+    @Override
+    public List<TestExecutionDTO> findTestExecutionList() {
+        log.info("Find test execution list");
+
+        List<TestExecutionEntity> testExecutionEntityList = testExecutionRepository.findAll();
+        return testExecutionResMapStruct.toDTOList(testExecutionEntityList);
+    }
+
+
+    @Override
+    public TestExecutionDTO findTestExecutionDetail(Long id) {
+
+        TestExecutionEntity testExecutionEntity = testExecutionRepository.findById(id)
+                .orElseThrow(() -> new TestExecutionNotFoundExecution("검사 수행 아이디가 존재하지 않습니다"));
+
+        return testExecutionResMapStruct.toDTO(testExecutionEntity);
+    }
 
 
 
+
+}

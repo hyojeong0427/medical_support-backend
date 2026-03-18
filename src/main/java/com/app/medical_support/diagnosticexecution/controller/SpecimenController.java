@@ -1,4 +1,5 @@
 package com.app.medical_support.diagnosticexecution.controller;
+
 import com.app.medical_support.common.ApiResponse;
 import com.app.medical_support.diagnosticexecution.dto.SpecimenDTO;
 import com.app.medical_support.diagnosticexecution.service.DiagnosticExecutionService;
@@ -8,7 +9,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -16,90 +25,87 @@ import java.util.List;
 @RequestMapping("/api/specimen")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Specimen", description = "간호사 검체")
+@Tag(name = "Specimen", description = "Specimen API")
 public class SpecimenController {
-
 
     private final DiagnosticExecutionService specimenService;
 
-
-    @Operation(summary = "specimen search", description = "검체 검색")
+    @Operation(summary = "Search specimen", description = "Search by visitId, collectedAt, or specimenType")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<SpecimenDTO>>> searchSpecimens(
-            @Parameter(description = "검색 조건 타입: testExecutionId(검사 수행 아이디), collectedAt(채취 일시)")
+            @Parameter(description = "visitId, collectedAt, specimenType")
             @RequestParam("searchType") String searchType,
-
-            @Parameter(description = "사용자 검색 값")
+            @Parameter(description = "Search value")
             @RequestParam("searchValue") String searchValue
     ) {
+        List<SpecimenDTO> specimenList = specimenService.searchSpecimen(searchType, searchValue);
+        ApiResponse<List<SpecimenDTO>> response =
+                new ApiResponse<>(true, "Specimen search completed.", specimenList);
 
-        List<SpecimenDTO> list = specimenService.searchSpecimen(searchType, searchValue);
-
-        return ResponseEntity.ok(new ApiResponse<>(true, "검체 검색 조회 성공", list));
+        return ResponseEntity.ok(response);
     }
 
-
-
-    @Operation(summary = "specimen list", description = "검체 전체 목록 조회")
+    @Operation(summary = "Specimen list", description = "Find all specimens")
     @GetMapping
     public ResponseEntity<ApiResponse<List<SpecimenDTO>>> findList() {
+        List<SpecimenDTO> specimenList = specimenService.findSpecimenList();
+        ApiResponse<List<SpecimenDTO>> response =
+                new ApiResponse<>(true, "Specimen list loaded.", specimenList);
 
-        List<SpecimenDTO> list = specimenService.findSpecimenList();
-
-        return ResponseEntity.ok(new ApiResponse<>(true, "검체 전체 목록 조회 성공", list));
+        return ResponseEntity.ok(response);
     }
 
-
-    @Operation(summary = "specimen", description = "검체 단건 조회")
+    @Operation(summary = "Specimen detail", description = "Find one specimen")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<SpecimenDTO>> findSpecimenDetail(
-            @Parameter(description = "검체 아이디")
-            @PathVariable String id) {
+            @Parameter(description = "Specimen ID")
+            @PathVariable String id
+    ) {
+        SpecimenDTO specimen = specimenService.findSpecimenDetail(id);
+        ApiResponse<SpecimenDTO> response =
+                new ApiResponse<>(true, "Specimen detail loaded.", specimen);
 
-        SpecimenDTO specimenDTO = specimenService.findSpecimenDetail(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "검체 단건 조회 성공", specimenDTO));
+        return ResponseEntity.ok(response);
     }
 
-
-
-    @Operation(summary = "Create specimen", description = "검체 신규 생성")
+    @Operation(summary = "Create specimen", description = "Create a new specimen")
     @PostMapping
     public ResponseEntity<ApiResponse<SpecimenDTO>> registerSpecimen(
-            @Parameter(description = "신규 생성을 위한 검체 데이터")
-            @RequestBody SpecimenDTO specimen)
-    {
-        SpecimenDTO specimenDTO = specimenService.registerSpecimen(specimen);
-        return ResponseEntity.ok(new ApiResponse<>(true, "검체 신규 생성 성공", specimenDTO));
+            @Parameter(description = "Specimen request body")
+            @RequestBody SpecimenDTO specimen
+    ) {
+        SpecimenDTO savedSpecimen = specimenService.registerSpecimen(specimen);
+        ApiResponse<SpecimenDTO> response =
+                new ApiResponse<>(true, "Specimen created.", savedSpecimen);
+
+        return ResponseEntity.ok(response);
     }
 
-
-
-    @Operation(summary = "Update specimen", description = "검체 수정.")
+    @Operation(summary = "Update specimen", description = "Update specimen data")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<SpecimenDTO>> modifySpecimen(
-            @Parameter(description = "검체 아이디")
+            @Parameter(description = "Specimen ID")
             @PathVariable String id,
-
-            @Parameter(description = "수정을 위한 검체 데이터")
+            @Parameter(description = "Specimen request body")
             @RequestBody SpecimenDTO specimenDTO
     ) {
+        SpecimenDTO updatedSpecimen = specimenService.modifySpecimen(id, specimenDTO);
+        ApiResponse<SpecimenDTO> response =
+                new ApiResponse<>(true, "Specimen updated.", updatedSpecimen);
 
-        SpecimenDTO updated = specimenService.modifySpecimen(id, specimenDTO);
-        return ResponseEntity.ok(new ApiResponse<>(true, "검체 수정 성공", updated));
+        return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Delete specimen", description = "검체 비활성화(is_active).")
+    @Operation(summary = "Delete specimen", description = "Change status to N")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> removeSpecimen(
-            @Parameter(description = "검체 아이디")
-            @PathVariable String id) {
-
+            @Parameter(description = "Specimen ID")
+            @PathVariable String id
+    ) {
         specimenService.deleteSpecimen(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "검체가 비활성화 되었습니다", id));
+        ApiResponse<String> response =
+                new ApiResponse<>(true, "Specimen deleted.", id);
+
+        return ResponseEntity.ok(response);
     }
-
-
-
-
-
 }

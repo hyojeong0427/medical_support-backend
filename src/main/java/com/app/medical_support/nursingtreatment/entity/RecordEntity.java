@@ -1,9 +1,7 @@
 package com.app.medical_support.nursingtreatment.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -12,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "NURSING_RECORD")
+@Table(name = "NURSING_RECORD", schema = "CHJ")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -58,7 +56,7 @@ public class RecordEntity {
     @Column(name = "STATUS")
     private String status;
 
-    @Column(name = "CREATED_AT")
+    @Column(name = "CREATED_AT", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "UPDATED_AT")
@@ -69,4 +67,29 @@ public class RecordEntity {
 
     @Column(name = "NURSING_ID")
     private String nursingId;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = now;
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = now;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+//
+//    @Column(name = "NURSING_NAME")
+//    private String nurseName;
+//
+//    @Column(name = "DEPARTMENT_NAME")
+//    private String departmentName;
+//
+//    @Column(name = "SHIFT_TYPE")
+//    private String shiftType;
 }

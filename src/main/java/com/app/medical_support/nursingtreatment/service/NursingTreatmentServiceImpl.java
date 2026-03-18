@@ -1,6 +1,8 @@
 package com.app.medical_support.nursingtreatment.service;
 
 import com.app.medical_support.nursingtreatment.dto.RecordDTO;
+import com.app.medical_support.nursingtreatment.dto.RecordRequestDTO;
+import com.app.medical_support.nursingtreatment.dto.RecordResponseDTO;
 import com.app.medical_support.nursingtreatment.entity.RecordEntity;
 import com.app.medical_support.nursingtreatment.exception.RecordNotFoundException;
 import com.app.medical_support.nursingtreatment.mapper.RecordMapper;
@@ -13,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -24,42 +28,48 @@ public class NursingTreatmentServiceImpl implements NursingTreatmentService {
         private final RecordResMapStruct recordResMapStruct;
         private final RecordMapper recordMapper;
 
-
     @Override
-    public List<RecordDTO> search (String searchType, String searchValue){
+    public List<RecordResponseDTO> search(String searchType, String searchValue, String startDate, String endDate) {
 
-                if (searchType == null || searchType.isEmpty()){
-                    throw new RecordNotFoundException("검색 타입이 필요합니다");
-                }
+          return recordMapper.search( searchType,  searchValue,  startDate,  endDate);
 
 
-                List<RecordEntity> entities =
-                        recordMapper.search(searchType, searchValue);
-                return recordResMapStruct.toDTOList(entities);
     }
 
     @Override
-    public List<RecordDTO> findRecordList() {
-        log.info("간호 기록 전체 조회");
-        List<RecordEntity> entities = recordRepository.findAll();
-        return recordResMapStruct.toDTOList(entities);
+    public List<RecordResponseDTO> findRecordList() {
+        return recordMapper.findRecordList();
     }
 
+
     @Override
-    public RecordDTO findRecordDetail(String id) {
+    public RecordResponseDTO findRecordDetail(String id) {
         log.info("Record detail nursingId={} 로 간호 기록 단건 조회 메서드가 실행됩니다.", id);
 
-        RecordEntity entity = recordRepository.findById(id).
-                orElseThrow(() -> new RecordNotFoundException(id));
+        RecordResponseDTO recordResponseDTO = recordMapper.findRecordDetail(id);
+        if (recordResponseDTO == null) {
+            throw new RecordNotFoundException(id);
+        }
 
-        return recordResMapStruct.toDTO(entity);
+        return recordResponseDTO;
     }
 
     @Override
     @Transactional
-    public RecordDTO registerRecord(RecordDTO recordDTO) {
+    public RecordDTO registerRecord(RecordRequestDTO recordRequestDTO) {
         log.info("간호 기록 신규 생성 메서드가 실행됩니다");
-        RecordEntity entity = recordReqMapStruct.toEntity(recordDTO);
+
+        RecordEntity entity = recordReqMapStruct.toEntity(recordRequestDTO);
+
+        log.info("create dto={}", entity);
+        log.info("recordedAt={}", entity.getRecordedAt());
+        log.info("visitId={}", entity.getVisitId());
+        log.info("nursingId={}", entity.getNursingId());
+
+
+        if (!hasText(entity.getRecordId())) {
+            entity.setRecordId(createRecordId());
+        }
 
         if (entity.getNursingId() == null || entity.getNursingId().trim().isEmpty()) {
             entity.setNursingId("NUR_" + System.currentTimeMillis());
@@ -137,6 +147,15 @@ public class NursingTreatmentServiceImpl implements NursingTreatmentService {
         recordRepository.save(entity);
 
         return recordResMapStruct.toDTO(entity);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+
+    private String createRecordId() {
+        return "REC_" + System.currentTimeMillis();
     }
 
 

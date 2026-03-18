@@ -1,4 +1,4 @@
 package com.app.medical_support.nursingtreatment.controller;
 
-public class NursingRecordController {
+public class TreatmentResultController {
 }
