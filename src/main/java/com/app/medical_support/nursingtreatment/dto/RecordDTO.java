@@ -70,6 +70,11 @@ public class RecordDTO {
     @Schema(description = "간호사 아이디")
     private String nursingId;
 
+    @Schema(description = "키")
+    private String height;
+
+    @Schema(description = "몸무게")
+    private String weight;
 
 
 

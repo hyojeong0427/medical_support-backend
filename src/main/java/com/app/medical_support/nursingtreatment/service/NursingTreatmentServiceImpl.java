@@ -66,16 +66,16 @@ public class NursingTreatmentServiceImpl implements NursingTreatmentService {
         log.info("visitId={}", entity.getVisitId());
         log.info("nursingId={}", entity.getNursingId());
 
-
         if (!hasText(entity.getRecordId())) {
-            entity.setRecordId(createRecordId());
-        }
+            entity.setRecordId(createRecordId());}
 
         if (entity.getNursingId() == null || entity.getNursingId().trim().isEmpty()) {
-            entity.setNursingId("NUR_" + System.currentTimeMillis());
-
-        }
+            entity.setNursingId("NUR_" + System.currentTimeMillis());}
         entity.setStatus("ACTIVE");
+
+        LocalDateTime now = LocalDateTime.now();
+        entity.setCreatedAt(now);
+
         RecordEntity newRecord = recordRepository.save(entity);
         return recordResMapStruct.toDTO(newRecord);
     }
@@ -102,7 +102,7 @@ public class NursingTreatmentServiceImpl implements NursingTreatmentService {
         saved.setStatus(recordDTO.getStatus());
         saved.setVisitId(recordDTO.getVisitId());
         saved.setNursingId(recordDTO.getNursingId());
-        saved.setUpdatedAt(recordDTO.getUpdatedAt());
+        saved.setUpdatedAt(LocalDateTime.now());
 
         RecordEntity updated = recordRepository.save(saved);
         return recordResMapStruct.toDTO(updated);

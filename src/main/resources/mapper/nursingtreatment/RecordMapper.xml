@@ -23,8 +23,7 @@
         e.name AS nurseName,
         d.dept_name,
         en.shift_type,
-        rc.PATIENT_NAME,
-        rc.DEPARTMENT_NAME,
+        rc.PATIENT_Id,
         nr.height_cm,
         nr.weight_kg
 
@@ -89,8 +88,7 @@
             e.name AS nurseName,
             d.dept_name,
             en.shift_type,
-            rc.PATIENT_NAME,
-            rc.DEPARTMENT_NAME,
+            rc.PATIENT_Id,
             nr.height_cm,
             nr.weight_kg
 
@@ -133,8 +131,7 @@
             e.name AS nurse_name,
             en.shift_type,
             cv.reception_id,
-            rc.patient_name,
-            rc.department_name,
+            rc.PATIENT_Id,
             nr.pain_score
         FROM CHJ.NURSING_RECORD nr
                  JOIN JCH.EMPLOYEE_NURSE en
